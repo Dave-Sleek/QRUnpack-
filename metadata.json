@@ -1,0 +1,6 @@
+{
+  "name": "QRUnpack",
+  "description": "Single-device QR Code Decoder & Smart Action Hub. Decode screenshots, clipboard images, screen snips, and camera scans privately in your browser.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
