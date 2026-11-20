@@ -9,6 +9,8 @@ import {
   QrCode,
   ShieldCheck,
   Sun,
+  Volume2,
+  VolumeX,
   X,
 } from 'lucide-react';
 import { BatchResultsList } from './components/BatchResultsList';
@@ -37,6 +39,12 @@ import {
   loadImageFromUrl,
   type DecodeAttemptResult,
 } from './utils/qrDecoder';
+import {
+  isSoundEnabled,
+  playDecodeChime,
+  setSoundEnabledPref,
+  unlockAudio,
+} from './utils/soundFeedback';
 
 type WorkspaceMode = 'idle' | 'camera' | 'crop';
 
@@ -95,11 +103,22 @@ export default function App() {
   const [activeResult, setActiveResult] = useState<ParsedPayload | null>(null);
   const [sourceInfo, setSourceInfo] = useState<DecodeSourceInfo | undefined>(undefined);
   const [history, setHistory] = useState<ScanHistoryItem[]>(() => loadScanHistory());
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => isSoundEnabled());
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const loadedUrlRef = useRef<string | null>(null);
   const batchUrlsRef = useRef<string[]>([]);
   const batchRunIdRef = useRef(0);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    setSoundEnabledPref(next);
+    if (next) {
+      unlockAudio();
+      playDecodeChime(true);
+    }
+  };
 
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
@@ -160,6 +179,7 @@ export default function App() {
       setHubTab('decode');
       setCropError('');
       setInputNotice('');
+      playDecodeChime();
     },
     []
   );
@@ -293,6 +313,7 @@ export default function App() {
                 passUsed: decoded.passUsed,
               });
               setHubTab('decode');
+              playDecodeChime();
             }
           } else {
             setBatchItems((prev) =>
@@ -335,6 +356,7 @@ export default function App() {
   const handleFilesSelected = useCallback(
     (fileList: FileList | File[] | undefined | null) => {
       if (!fileList || fileList.length === 0) return;
+      unlockAudio();
       const files = Array.from(fileList);
       if (files.length === 1) {
         const file = files[0];
@@ -370,6 +392,7 @@ export default function App() {
           const blob = item.getAsFile();
           if (blob) {
             e.preventDefault();
+            unlockAudio();
             void processImageBlob(blob, 'clipboard');
             return;
           }
@@ -390,6 +413,7 @@ export default function App() {
 
   // Dedicated "Paste Image from Clipboard" button using navigator.clipboard.read()
   const handleClipboardButton = async () => {
+    unlockAudio();
     setInputNotice('');
     if (!navigator.clipboard?.read) {
       setInputNotice(
@@ -432,6 +456,7 @@ export default function App() {
 
   const handleRetryCrop = async (crop: CropRect) => {
     if (!activeCropImageUrl) return;
+    unlockAudio();
     setIsDecoding(true);
     setCropError('');
     try {
@@ -466,6 +491,7 @@ export default function App() {
           setHubTab('decode');
           setCroppingBatchItemId(null);
           setMode('idle');
+          playDecodeChime();
         } else {
           commitDecodedText(decoded.text, {
             sourceType: sourceInfo?.sourceType || 'upload',
@@ -619,8 +645,22 @@ export default function App() {
             </a>
           </nav>
 
-          {/* Zone 3: 1 Primary Header Control (Theme Toggle) */}
-          <div className="flex items-center shrink-0">
+          {/* Zone 3: Primary Header Controls (Sound + Theme Toggle) */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={toggleSound}
+              className="min-h-[40px] min-w-[40px] px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#131922] text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+              aria-label={soundEnabled ? 'Mute decode chime' : 'Unmute decode chime'}
+              title={soundEnabled ? 'Decode sound on' : 'Decode sound muted'}
+            >
+              {soundEnabled ? (
+                <Volume2 className="w-4 h-4" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+              )}
+            </button>
+
             <button
               type="button"
               onClick={toggleTheme}
@@ -806,7 +846,10 @@ export default function App() {
                       setIsDragging(false);
                       handleFilesSelected(e.dataTransfer.files);
                     }}
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      unlockAudio();
+                      fileInputRef.current?.click();
+                    }}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
@@ -851,6 +894,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => {
+                        unlockAudio();
                         setInputNotice('');
                         setMode('camera');
                       }}
