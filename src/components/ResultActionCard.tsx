@@ -217,108 +217,183 @@ export function ResultActionCard({
       {/* Tailored Payload Body & Primary Actions */}
       <div className="p-4 sm:p-5 space-y-4">
         {/* 1. WEBSITE / APP LINK OR FILE DOWNLOAD */}
-        {(payload.kind === 'url' || payload.kind === 'file') && payload.url && (
-          <>
-            <div className="rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 p-3.5 space-y-2">
-              <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {payload.kind === 'file' ? 'File Destination URL' : 'Destination URL (Root Domain Highlighted)'}
-              </div>
-              <div className="font-mono text-sm leading-relaxed break-all select-all">
-                <span className="text-slate-400 dark:text-slate-500">{payload.url.protocol}</span>
-                {payload.url.subdomain && (
-                  <span className="text-slate-500 dark:text-slate-400">{payload.url.subdomain}</span>
-                )}
-                <span className="font-semibold text-slate-950 dark:text-white underline decoration-blue-500/60 decoration-2 underline-offset-4">
-                  {payload.url.rootDomain}
-                </span>
-                {payload.url.port && (
-                  <span className="text-amber-600 dark:text-amber-400 font-semibold">{payload.url.port}</span>
-                )}
-                <span className="text-slate-600 dark:text-slate-300">{payload.url.pathAndQuery}</span>
-              </div>
+        {(payload.kind === 'url' || payload.kind === 'file') && payload.url && (() => {
+          const url = payload.url;
+          const isUnusual =
+            url.isPunycode ||
+            url.hasUserInfo ||
+            url.isIpAddress ||
+            Boolean(url.port) ||
+            url.isHttpInsecure;
 
-              {payload.file && (
-                <div className="pt-1 text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2">
-                  <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                  <span className="font-medium">{payload.file.label}</span>
-                  <span aria-hidden="true">·</span>
-                  <span className="font-mono truncate">{payload.file.fileName}</span>
+          let structureTone = 'text-emerald-700 dark:text-emerald-400';
+          let structureLabel = 'URL structure: Standard HTTPS';
+
+          if (url.isPunycode || url.hasUserInfo) {
+            structureTone = 'text-rose-700 dark:text-rose-400';
+            structureLabel = url.hasUserInfo
+              ? 'URL structure: Unusual · Embedded credentials (@)'
+              : 'URL structure: Unusual · Internationalized (xn--)';
+          } else if (url.isShortener) {
+            structureTone = 'text-amber-700 dark:text-amber-400';
+            structureLabel = 'URL shortener detected';
+          } else if (url.isIpAddress) {
+            structureTone = 'text-amber-700 dark:text-amber-400';
+            structureLabel = 'URL structure: Unusual · Raw IP address';
+          } else if (url.port) {
+            structureTone = 'text-amber-700 dark:text-amber-400';
+            structureLabel = `URL structure: Unusual · Custom port (${url.port})`;
+          } else if (url.isHttpInsecure) {
+            structureTone = 'text-amber-700 dark:text-amber-400';
+            structureLabel = 'URL structure: Unencrypted HTTP';
+          }
+
+          return (
+            <>
+              <div className="rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 divide-y divide-slate-200/70 dark:divide-slate-800">
+                {/* Explicit Domain & Local Structure Status */}
+                <div className="px-3.5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4">
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      Domain
+                    </div>
+                    <div className="font-mono text-sm leading-snug break-all select-all mt-0.5">
+                      {url.subdomain && (
+                        <span className="text-slate-500 dark:text-slate-400">{url.subdomain}</span>
+                      )}
+                      <span className="font-semibold text-slate-950 dark:text-white underline decoration-blue-500/60 decoration-2 underline-offset-4">
+                        {url.rootDomain}
+                      </span>
+                      {url.port && (
+                        <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                          {url.port}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={`inline-flex items-center gap-1.5 text-xs font-medium shrink-0 ${structureTone}`}>
+                    {isUnusual || url.isShortener ? (
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    ) : (
+                      <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                    )}
+                    <span>{structureLabel}</span>
+                  </div>
                 </div>
-              )}
 
-              {/* Built-in heuristic notices (unboxed inline warnings) */}
-              {(payload.url.isIpAddress ||
-                payload.url.isPunycode ||
-                payload.url.isHttpInsecure ||
-                payload.url.isShortener) && (
-                <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 space-y-1">
-                  {payload.url.isShortener && (
-                    <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Shortened URL masks the final destination until opened.</span>
+                {/* Full URL */}
+                <div className="px-3.5 py-3 space-y-1.5">
+                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    {payload.kind === 'file' ? 'File URL' : 'Full URL'}
+                  </div>
+                  <div className="font-mono text-xs sm:text-sm leading-relaxed break-all select-all text-slate-700 dark:text-slate-300">
+                    <span className="text-slate-400 dark:text-slate-500">{url.protocol}</span>
+                    <span>{url.hostname}</span>
+                    {url.port && (
+                      <span className="text-amber-600 dark:text-amber-400 font-semibold">{url.port}</span>
+                    )}
+                    <span>{url.pathAndQuery}</span>
+                  </div>
+
+                  {payload.file && (
+                    <div className="pt-1 text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                      <span className="font-medium shrink-0">{payload.file.label}</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="font-mono truncate">{payload.file.fileName}</span>
                     </div>
                   )}
-                  {payload.url.isIpAddress && (
-                    <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Points to a raw IP address instead of a named domain.</span>
-                    </div>
-                  )}
-                  {payload.url.isPunycode && (
-                    <div className="flex items-center gap-1.5 text-xs text-rose-700 dark:text-rose-400">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Contains internationalized punycode (xn--) characters—verify spelling carefully.</span>
-                    </div>
-                  )}
-                  {payload.url.isHttpInsecure && (
-                    <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Unencrypted HTTP link (not HTTPS). Avoid entering passwords.</span>
+
+                  {/* Detailed local heuristic notes when triggered */}
+                  {(url.isIpAddress ||
+                    url.isPunycode ||
+                    url.isHttpInsecure ||
+                    url.isShortener ||
+                    url.hasUserInfo ||
+                    Boolean(url.port)) && (
+                    <div className="pt-2 mt-1 border-t border-slate-200/70 dark:border-slate-800 space-y-1">
+                      {url.isShortener && (
+                        <div className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span>Shortened URL masks the final destination until opened.</span>
+                        </div>
+                      )}
+                      {url.isIpAddress && (
+                        <div className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span>Points directly to an IP address instead of a named domain.</span>
+                        </div>
+                      )}
+                      {url.isPunycode && (
+                        <div className="flex items-start gap-1.5 text-xs text-rose-700 dark:text-rose-400">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span>Contains internationalized punycode (xn--) characters—verify spelling carefully.</span>
+                        </div>
+                      )}
+                      {url.hasUserInfo && (
+                        <div className="flex items-start gap-1.5 text-xs text-rose-700 dark:text-rose-400">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span>Contains an @ userinfo prefix that can disguise the real destination host.</span>
+                        </div>
+                      )}
+                      {url.port && (
+                        <div className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span>Uses a non-standard port ({url.port}).</span>
+                        </div>
+                      )}
+                      {url.isHttpInsecure && (
+                        <div className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span>Unencrypted HTTP link (not HTTPS). Avoid entering passwords.</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="flex flex-col sm:flex-row gap-2.5">
-              <a
-                href={payload.url.fullUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 min-h-[48px] px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-sm font-semibold transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap"
-              >
-                {payload.kind === 'file' ? (
-                  <>
-                    <Download className="w-4 h-4 shrink-0" />
-                    <span>Open / Download File</span>
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="w-4 h-4 shrink-0" />
-                    <span>Open Link in New Tab</span>
-                  </>
-                )}
-              </a>
-              <button
-                type="button"
-                onClick={() => handleCopy(payload.url!.fullUrl, 'url')}
-                className="min-h-[48px] px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
-              >
-                {copiedKey === 'url' ? (
-                  <>
-                    <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Copied</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    <span>Copy Link</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </>
-        )}
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <a
+                  href={url.fullUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 min-h-[48px] px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-sm font-semibold transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap"
+                >
+                  {payload.kind === 'file' ? (
+                    <>
+                      <Download className="w-4 h-4 shrink-0" />
+                      <span>Open File</span>
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="w-4 h-4 shrink-0" />
+                      <span>Open Link in New Tab</span>
+                    </>
+                  )}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(url.fullUrl, 'url')}
+                  className="min-h-[48px] px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+                >
+                  {copiedKey === 'url' ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>{payload.kind === 'file' ? 'Copy File URL' : 'Copy Link'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          );
+        })()}
 
         {/* 2. WI-FI NETWORK */}
         {payload.kind === 'wifi' && payload.wifi && (
@@ -767,8 +842,8 @@ export function ResultActionCard({
         <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
           {aiStatus === 'idle' && (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Want a plain-English explanation or phishing check before acting?
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Sends this decoded text or URL to Gemini for a safety and summary check. Your QR image stays on this device.
               </p>
               <button
                 type="button"

@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Copy,
   Crop,
+  Download,
   ExternalLink,
   ImageOff,
   Loader2,
@@ -34,9 +35,11 @@ export function BatchResultsList({
   const [copiedAll, setCopiedAll] = useState(false);
 
   const decodedItems = items.filter((item) => item.status === 'decoded' && item.payload);
-  const pendingCount = items.filter(
+  const remainingCount = items.filter(
     (item) => item.status === 'pending' || item.status === 'scanning'
   ).length;
+  const completedCount = items.length - remainingCount;
+  const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
   const needsCropCount = items.filter((item) => item.status === 'not_found').length;
 
   const copyText = async (text: string, id: string) => {
@@ -77,70 +80,121 @@ export function BatchResultsList({
     window.setTimeout(() => setCopiedAll(false), 1800);
   };
 
+  const ringRadius = 8;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const ringOffset = ringCircumference * (1 - progressPercent / 100);
+
   return (
     <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131922] overflow-hidden">
-      <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
-            Batch Scan Results
-          </h2>
-          <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 tabular-nums mt-0.5">
-            {isProcessing ? (
-              <span className="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-medium">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>
-                  Scanning {items.length - pendingCount} of {items.length}...
-                </span>
-              </span>
-            ) : (
-              <>
-                <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                  {decodedItems.length} decoded
-                </span>
-                {needsCropCount > 0 && (
+      <div className="border-b border-slate-100 dark:border-slate-800/80">
+        <div className="px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {isProcessing && (
+              <svg
+                className="w-6 h-6 -rotate-90 shrink-0"
+                viewBox="0 0 22 22"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="11"
+                  cy="11"
+                  r={ringRadius}
+                  fill="none"
+                  strokeWidth="2.5"
+                  className="stroke-slate-200 dark:stroke-slate-800"
+                />
+                <circle
+                  cx="11"
+                  cy="11"
+                  r={ringRadius}
+                  fill="none"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeDasharray={ringCircumference}
+                  strokeDashoffset={ringOffset}
+                  className="stroke-blue-600 dark:stroke-blue-400 transition-[stroke-dashoffset] duration-200"
+                />
+              </svg>
+            )}
+
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                Batch Scan Results
+              </h2>
+              <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 tabular-nums mt-0.5">
+                {isProcessing ? (
+                  <span className="text-blue-600 dark:text-blue-400 font-medium">
+                    Processed {completedCount} of {items.length} · {remainingCount}{' '}
+                    {remainingCount === 1 ? 'file' : 'files'} remaining ({progressPercent}%)
+                  </span>
+                ) : (
                   <>
-                    <span aria-hidden="true">·</span>
-                    <span className="text-amber-700 dark:text-amber-400">
-                      {needsCropCount} needs crop
+                    <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                      {decodedItems.length} decoded
                     </span>
+                    {needsCropCount > 0 && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span className="text-amber-700 dark:text-amber-400">
+                          {needsCropCount} needs crop
+                        </span>
+                      </>
+                    )}
+                    <span aria-hidden="true">·</span>
+                    <span>{items.length} total</span>
                   </>
                 )}
-                <span aria-hidden="true">·</span>
-                <span>{items.length} total</span>
-              </>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {decodedItems.length > 0 && (
+              <button
+                type="button"
+                onClick={handleCopyAll}
+                className="min-h-[38px] px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+              >
+                {copiedAll ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Copied All</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy All ({decodedItems.length})</span>
+                  </>
+                )}
+              </button>
             )}
+            <button
+              type="button"
+              onClick={onClearBatch}
+              className="min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-1 whitespace-nowrap cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Clear</span>
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {decodedItems.length > 0 && (
-            <button
-              type="button"
-              onClick={handleCopyAll}
-              className="min-h-[38px] px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
-            >
-              {copiedAll ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Copied All</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Copy All ({decodedItems.length})</span>
-                </>
-              )}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onClearBatch}
-            className="min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-1 whitespace-nowrap cursor-pointer"
+        {/* Linear Progress Bar */}
+        {isProcessing && (
+          <div
+            role="progressbar"
+            aria-label="Batch scan progress"
+            aria-valuenow={completedCount}
+            aria-valuemin={0}
+            aria-valuemax={items.length}
+            className="h-1.5 w-full bg-slate-100 dark:bg-slate-800/90 overflow-hidden"
           >
-            <X className="w-3.5 h-3.5" />
-            <span>Clear</span>
-          </button>
-        </div>
+            <div
+              className="h-full bg-blue-600 dark:bg-blue-500 transition-[width] duration-200 ease-out"
+              style={{ width: `${Math.max(progressPercent, 4)}%` }}
+            />
+          </div>
+        )}
       </div>
 
       <ul className="divide-y divide-slate-100 dark:divide-slate-800/80 max-h-[430px] overflow-y-auto">
@@ -251,10 +305,14 @@ export function BatchResultsList({
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
                         className="min-h-[40px] min-w-[40px] rounded-xl text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 inline-flex items-center justify-center"
-                        aria-label="Open link in new tab"
-                        title="Open link"
+                        aria-label={item.payload.kind === 'file' ? 'Open file' : 'Open link in new tab'}
+                        title={item.payload.kind === 'file' ? 'Open file' : 'Open link'}
                       >
-                        <ExternalLink className="w-4 h-4" />
+                        {item.payload.kind === 'file' ? (
+                          <Download className="w-4 h-4" />
+                        ) : (
+                          <ExternalLink className="w-4 h-4" />
+                        )}
                       </a>
                     )}
                     <button

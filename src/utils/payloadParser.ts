@@ -146,6 +146,7 @@ function parseUrlParts(raw: string): { url: UrlParts; file?: FileInfo } | null {
 
     const url: UrlParts = {
       fullUrl: parsed.href,
+      hostname: parsed.hostname,
       protocol: `${parsed.protocol}//`,
       subdomain,
       rootDomain,
@@ -155,6 +156,7 @@ function parseUrlParts(raw: string): { url: UrlParts; file?: FileInfo } | null {
       isPunycode: parsed.hostname.toLowerCase().includes('xn--'),
       isHttpInsecure: parsed.protocol === 'http:',
       isShortener: KNOWN_SHORTENERS.has(rootDomain),
+      hasUserInfo: Boolean(parsed.username || parsed.password),
     };
 
     const file = detectFileFromUrl(parsed);

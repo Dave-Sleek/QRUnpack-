@@ -13,6 +13,7 @@ export type PayloadKind =
 
 export interface UrlParts {
   fullUrl: string;
+  hostname: string;
   protocol: string;
   subdomain: string;
   rootDomain: string;
@@ -22,6 +23,7 @@ export interface UrlParts {
   isPunycode: boolean;
   isHttpInsecure: boolean;
   isShortener: boolean;
+  hasUserInfo: boolean;
 }
 
 export interface FileInfo {
