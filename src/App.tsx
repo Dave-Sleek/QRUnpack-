@@ -20,6 +20,8 @@ import { GenerateQrPanel } from './components/GenerateQrPanel';
 import { InfoPages, type PageSlug } from './components/InfoPages';
 import { RecentScans } from './components/RecentScans';
 import { ResultActionCard } from './components/ResultActionCard';
+import { PWAInstallButton } from './components/PWAInstallButton';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import type {
   BatchScanItem,
   CropRect,
@@ -645,8 +647,9 @@ export default function App() {
             </a>
           </nav>
 
-          {/* Zone 3: Primary Header Controls (Sound + Theme Toggle) */}
+          {/* Zone 3: Primary Header Controls (Install + Sound + Theme Toggle) */}
           <div className="flex items-center gap-2 shrink-0">
+            <PWAInstallButton />
             <button
               type="button"
               onClick={toggleSound}
@@ -1080,6 +1083,7 @@ export default function App() {
           </nav>
         </div>
       </footer>
+      <OfflineIndicator />
     </div>
   );
 }

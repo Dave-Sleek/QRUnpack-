@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#2563eb"/>
+  <g transform="translate(96, 96)" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+    <!-- QR Corners & Code Mark -->
+    <path d="M48 160V80a32 32 0 0132-32h80" />
+    <rect x="80" y="80" width="64" height="64" rx="8" fill="#ffffff" />
+    <path d="M256 48h80a32 32 0 0132 32v80" />
+    <rect x="288" y="80" width="64" height="64" rx="8" fill="#ffffff" />
+    <path d="M48 352v80a32 32 0 0032 32h80" />
+    <rect x="80" y="368" width="64" height="64" rx="8" fill="#ffffff" />
+    <line x1="224" y1="224" x2="288" y2="288" stroke-width="36" />
+    <line x1="224" y1="288" x2="288" y2="224" stroke-width="36" />
+    <circle cx="352" cy="352" r="32" fill="#ffffff" />
+  </g>
+</svg>
