@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { Download, Smartphone, X } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -87,6 +88,38 @@ export const PWAInstallButton: React.FC = () => {
 
   // iOS Safari flow (beforeinstallprompt is not supported by WebKit)
   if (isIOS) {
+    const modalContent = showIOSGuide && typeof document !== 'undefined' ? ReactDOM.createPortal(
+      <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/75 p-4 pt-20 pb-6 backdrop-blur-sm overflow-y-auto">
+        <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#131922] border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 my-auto">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+              Install QRUnpack on iOS
+            </h3>
+            <button
+              type="button"
+              onClick={() => setShowIOSGuide(false)}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-1"
+              aria-label="Close guide"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            1. Tap the <strong className="text-slate-900 dark:text-white">Share</strong> button in your Safari toolbar below.<br />
+            2. Scroll down and tap <strong className="text-slate-900 dark:text-white">Add to Home Screen</strong>.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowIOSGuide(false)}
+            className="w-full min-h-[44px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors cursor-pointer"
+          >
+            Got it
+          </button>
+        </div>
+      </div>,
+      document.body
+    ) : null;
+
     return (
       <>
         <button
@@ -98,36 +131,7 @@ export const PWAInstallButton: React.FC = () => {
           <span>Install App</span>
         </button>
 
-        {showIOSGuide && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-            <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#131922] border border-slate-200 dark:border-slate-800 p-6 shadow-xl space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-                  Install QRUnpack on iOS
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setShowIOSGuide(false)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                  aria-label="Close guide"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                1. Tap the <strong className="text-slate-900 dark:text-white">Share</strong> button in your Safari toolbar below.<br />
-                2. Scroll down and tap <strong className="text-slate-900 dark:text-white">Add to Home Screen</strong>.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowIOSGuide(false)}
-                className="w-full min-h-[44px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors cursor-pointer"
-              >
-                Got it
-              </button>
-            </div>
-          </div>
-        )}
+        {modalContent}
       </>
     );
   }

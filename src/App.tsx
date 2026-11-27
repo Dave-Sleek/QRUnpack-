@@ -686,7 +686,7 @@ export default function App() {
         </div>
       </header>
 
-      <main id="top" className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      <main id="top" className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-6 sm:pb-8 space-y-6">
         {activePage !== 'decoder' ? (
           <InfoPages
             page={activePage}
